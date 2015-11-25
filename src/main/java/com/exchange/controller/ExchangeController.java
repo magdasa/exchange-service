@@ -5,6 +5,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xml.sax.SAXException;
@@ -20,8 +21,8 @@ import java.util.Optional;
 public class ExchangeController {
 
     @ResponseBody
-    @RequestMapping("/api/today/CHF")
-    public String getTodayExchangeRate() throws IOException, SAXException, ParserConfigurationException {
+    @RequestMapping(value = "/api/today/{currency}")
+    public String getTodayExchangeRate(@PathVariable String currency) throws IOException, SAXException, ParserConfigurationException {
         List<JSONObject> rateList;
         try {
             String text = IOUtils.toString(new URL("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml").openConnection().getInputStream());
@@ -31,7 +32,7 @@ public class ExchangeController {
             Optional<JSONObject> optionalRatesAtDate = list.stream().filter(el -> el.get("time").equals("2015-11-24")).findAny();
             JSONObject ratesAtDate = optionalRatesAtDate.get();
             rateList = jsonArrayToArray((JSONArray)ratesAtDate.get("Cube"));
-            return rateList.stream().filter(el -> el.get("currency").equals("CHF")).findAny().get().get("rate").toString();
+            return rateList.stream().filter(el -> el.get("currency").equals(currency)).findAny().get().get("rate").toString();
         } catch (IOException e) {
             e.printStackTrace();
         }
