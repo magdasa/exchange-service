@@ -1,0 +1,44 @@
+#################
+## JAVA
+#################
+
+target/
+
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+#################
+## IntelliJ
+#################
+
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dataSources.ids
+.idea/*.iws
+.idea/libraries/**
+.idea/artifacts/**
+.idea/dataSources.local.xml
+.idea/dictionaries/*.xml
+
+###############
+## Various
+###############
+
+# Mac crap
+.DS_Store
+
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Python byte-code
+*.pyc
+
+# npm crap
+npm-debug.log
