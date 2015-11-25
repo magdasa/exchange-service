@@ -25,9 +25,17 @@
         <processorPath useClasspath="true" />
         <module name="exchange" />
       </profile>
+      <profile default="false" name="Annotation profile for exchange-service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target\generated-test-sources\test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="exchange-service" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="exchange" target="1.8" />
+      <module name="exchange-service" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
