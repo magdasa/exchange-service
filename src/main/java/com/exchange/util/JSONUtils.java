@@ -19,10 +19,9 @@ public class JSONUtils {
     public static final String ELEMENT = "Cube";
     public static final String PRIMARY_ELEMENT = "gesmes:Envelope";
 
-    public static List<JSONObject> getJsonObjects(String url, Function<JSONObject,JSONArray> getObject) throws IOException {
-        String text = IOUtils.toString(new URL(url).openConnection().getInputStream());
-        JSONObject jsonObject = XML.toJSONObject(text);
-        JSONArray jsonArray = getObject.apply(jsonObject);
+    public static List<JSONObject> getJsonObjects(String url, Function<String,JSONArray> getObject) throws IOException {
+        String xmlText = IOUtils.toString(new URL(url).openConnection().getInputStream());
+        JSONArray jsonArray = getObject.apply(xmlText);
         return jsonArrayToArray(jsonArray);
     }
 
@@ -34,13 +33,13 @@ public class JSONUtils {
         return jsonObjects;
     }
 
-    public static Function<JSONObject, JSONArray> allExchangeRatesJSONArray() {
-        return (JSONObject jsonObject) -> ((JSONArray)((JSONObject)((JSONObject)((JSONObject)jsonObject
+    public static Function<String, JSONArray> allExchangeRatesJSONArrayFunction() {
+        return (String urlText) -> ((JSONArray)((JSONObject)((JSONObject)((JSONObject)XML.toJSONObject(urlText)
                 .get(PRIMARY_ELEMENT)).get(ELEMENT)).get(ELEMENT)).get(ELEMENT));
     }
 
-    public static Function<JSONObject, JSONArray> todayRateJSONArray() {
-        return (JSONObject jsonObject) -> ((JSONArray)((JSONObject) ((JSONObject) jsonObject
+    public static Function<String, JSONArray> todayRateJSONArrayFunction() {
+        return (String urlText) -> ((JSONArray)((JSONObject) ((JSONObject)XML.toJSONObject(urlText)
                 .get(PRIMARY_ELEMENT)).get(ELEMENT)).get(ELEMENT));
     }
 

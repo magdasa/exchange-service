@@ -44,14 +44,14 @@ public class ExchangeRateService {
 
     public void updateCache() {
         try {
-            updateCache(JSONUtils.EUROFXREF_HIST_90D_XML, JSONUtils.todayRateJSONArray(), this::cacheExchangeRate);
-            updateCache(JSONUtils.EUROFXREF_DAILY_XML, JSONUtils.allExchangeRatesJSONArray(), this::cacheTodayRate);
+            updateCache(JSONUtils.EUROFXREF_HIST_90D_XML, JSONUtils.todayRateJSONArrayFunction(), this::cacheExchangeRate);
+            updateCache(JSONUtils.EUROFXREF_DAILY_XML, JSONUtils.allExchangeRatesJSONArrayFunction(), this::cacheTodayRate);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void updateCache(String url, Function<JSONObject, JSONArray> getJSONObject, Consumer<JSONObject> caching) throws IOException {
+    public void updateCache(String url, Function<String, JSONArray> getJSONObject, Consumer<JSONObject> caching) throws IOException {
         List<JSONObject> exchangeRates = JSONUtils.getJsonObjects(url, getJSONObject);
         exchangeRates.stream().forEach(caching);
     }
