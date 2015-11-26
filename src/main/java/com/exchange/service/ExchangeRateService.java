@@ -7,88 +7,60 @@ import org.json.XML;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toMap;
-
-@Service
+@Service("exchangeRateService")
 public class ExchangeRateService {
 
+    @Autowired
     CacheManager cacheManager;
 
     public String getTodayExchangeRate(String currency) {
-        List<JSONObject> rateList;
         try {
-            String text = IOUtils.toString(new URL("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml").openConnection().getInputStream());
-            JSONObject jsonObject = XML.toJSONObject(text);
-            JSONArray jsonArray = ((JSONArray)((JSONObject)((JSONObject)((JSONObject)jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube")).get("Cube"));
-            List<JSONObject> list= jsonArrayToArray(jsonArray);
+            List<JSONObject> list = getJsonObjects("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+                    (JSONObject jsonObject) -> ((JSONArray)((JSONObject)((JSONObject)((JSONObject)jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube")).get("Cube")));
             return list.stream().filter(el -> el.get("currency").equals(currency)).findAny().get().get("rate").toString();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return "today exchange rate not available";
+    }
+
+    private List<JSONObject> getJsonObjects(String url, Function<JSONObject,JSONArray> getObject) throws IOException {
+        String text = IOUtils.toString(new URL(url).openConnection().getInputStream());
+        JSONObject jsonObject = XML.toJSONObject(text);
+        JSONArray jsonArray = getObject.apply(jsonObject);
+        return jsonArrayToArray(jsonArray);
     }
 
     public String getExchangeRateOnDate(String date, String currency) {
-        List<JSONObject> rateList;
-        try {
-            String text = IOUtils.toString(new URL("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml").openConnection().getInputStream());
-            JSONObject jsonObject = XML.toJSONObject(text);
-            JSONArray jsonArray = ((JSONArray)((JSONObject)((JSONObject)jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube"));
-            List<JSONObject> list= jsonArrayToArray(jsonArray);
-            Optional<JSONObject> optionalRatesAtDate = list.stream().filter(el -> el.get("time").equals(date)).findAny();
-            JSONObject ratesAtDate = optionalRatesAtDate.get();
-            rateList = jsonArrayToArray((JSONArray)ratesAtDate.get("Cube"));
-            return rateList.stream().filter(el -> el.get("currency").equals(currency)).findAny().get().get("rate").toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "";
-
+        Cache.ValueWrapper exchangeFromCache = cacheManager.getCache("exchangeRates").get(date + "_" + currency);
+        return exchangeFromCache != null ? (String) exchangeFromCache.get() : "exchange rate not available";
     }
 
-    public Map<String, String> updateCache(String time) {
-        List<JSONObject> rateList;
-        Map<String, String> rates = null;//(Map<String, String>) cacheManager.getCache("currencyRates").get(time);
+    public void updateCache() {
         try {
-            String text = IOUtils.toString(new URL("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml").openConnection().getInputStream());
-            JSONObject jsonObject = XML.toJSONObject(text);
-            JSONArray jsonArray = ((JSONArray) ((JSONObject) ((JSONObject) jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube"));
-            List<JSONObject> list = jsonArrayToArray(jsonArray);
-            Optional<JSONObject> optionalRatesAtDate = list.stream().filter(el -> el.get("time").equals(time)).findAny();
+            List<JSONObject> list = getJsonObjects("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml",
+                    (JSONObject jsonObject) -> ((JSONArray)((JSONObject) ((JSONObject) jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube")));
             list.stream().forEach(this::cache);
-            JSONObject ratesAtDate = optionalRatesAtDate.get();
-            rateList = jsonArrayToArray((JSONArray) ratesAtDate.get("Cube"));
-            rates = rateList.stream().collect(Collectors.<JSONObject, String, String>toMap(
-                    e1 -> e1.get("currency").toString(),
-                    e1 -> e1.get("rate").toString()));
-            for (Map.Entry entry : rates.entrySet()) {
-                System.out.println(entry.getKey() + " : " + entry.getValue());
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-//        cacheManager.getCache("currencyRates").put(time, rates);
-        return rates;
     }
 
-    @Cacheable(value="exchangeRates", key="#time")
     private void cache(JSONObject e) {
         String time = e.get("time").toString();
         List<JSONObject> rateList = jsonArrayToArray((JSONArray) e.get("Cube"));
         Map<String, String> rates  = rateList.stream().collect(Collectors.<JSONObject, String, String>toMap(
                 e1 -> e1.get("currency").toString(),
                 e1 -> e1.get("rate").toString()));
+        rates.forEach((k,v) -> cacheManager.getCache("exchangeRates").put(time + "_" + k, v));
     }
 
     private List<JSONObject> jsonArrayToArray(JSONArray jsonArray) {
@@ -97,5 +69,9 @@ public class ExchangeRateService {
             jsonObjects.add(((JSONObject)jsonObject));
         }
         return jsonObjects;
+    }
+
+    public void setCacheManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
     }
 }

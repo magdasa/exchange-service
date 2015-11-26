@@ -1,6 +1,7 @@
 package com.exchange;
 
 import com.exchange.service.ExchangeRateService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.CacheManager;
@@ -14,21 +15,18 @@ import java.util.concurrent.*;
 @SpringBootApplication
 public class Application {
 
-    CacheManager cacheManager;
+    @Autowired
+    ExchangeRateService exchangeRateService;
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
 
         ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate((Runnable) () -> {
-            Map<String, String> rates = new ExchangeRateService().updateCache("2015-11-25");
-            for (Map.Entry entry : rates.entrySet()) {
-                System.out.println(entry.getKey() + " : " + entry.getValue());
-            }
-        }, 0, 10, TimeUnit.SECONDS);
+        ExchangeRateService exchangeRateService = (ExchangeRateService) context.getBean("exchangeRateService");
 
-        ((ConfigurableApplicationContext)context).close();
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleAtFixedRate((Runnable) exchangeRateService::updateCache, 0, 10, TimeUnit.MINUTES);
+
     }
 
 

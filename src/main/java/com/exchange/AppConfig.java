@@ -1,5 +1,6 @@
 package com.exchange;
 
+import com.exchange.service.ExchangeRateService;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.ehcache.EhCacheCacheManager;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
@@ -9,10 +10,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 @Configuration
-@ComponentScan({ "com.exchange.*" })
+@ComponentScan(value = { "com.exchange.*" })
 public class AppConfig {
 
-    @Bean
+    @Bean(name = "ehcache")
     public CacheManager cacheManager() {
         return new EhCacheCacheManager(ehCacheCacheManager().getObject());
     }
