@@ -10,13 +10,17 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("exchangeRateService")
 public class ExchangeRateService {
+
+    public static final String CACHE_NAME = "exchangeRates";
+    public static final String CURRENCY = "currency";
+    public static final String RATE = "rate";
+    public static final String TIME = "time";
 
     @Autowired
     CacheManager cacheManager;
@@ -29,20 +33,19 @@ public class ExchangeRateService {
         return getFromCache(date + "_" + currency);
     }
 
-
     private String getFromCache(String key) {
-        Cache.ValueWrapper exchangeFromCache = cacheManager.getCache("exchangeRates").get(key);
+        Cache.ValueWrapper exchangeFromCache = getCache().get(key);
         return exchangeFromCache != null ? (String) exchangeFromCache.get() : "exchange rate not available";
+    }
+
+    private Cache getCache() {
+        return cacheManager.getCache(CACHE_NAME);
     }
 
     public void updateCache() {
         try {
-            updateCache("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml",
-                    (JSONObject jsonObject) -> ((JSONArray)((JSONObject) ((JSONObject) jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube")),
-                    this::cacheExchangeRate);
-            updateCache("http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
-                    (JSONObject jsonObject) -> ((JSONArray)((JSONObject)((JSONObject)((JSONObject)jsonObject.get("gesmes:Envelope")).get("Cube")).get("Cube")).get("Cube")),
-                    this::cacheTodayRate);
+            updateCache(JSONUtils.EUROFXREF_HIST_90D_XML, JSONUtils.todayRateJSONArray(), this::cacheExchangeRate);
+            updateCache(JSONUtils.EUROFXREF_DAILY_XML, JSONUtils.allExchangeRatesJSONArray(), this::cacheTodayRate);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,16 +57,16 @@ public class ExchangeRateService {
     }
 
     private void cacheTodayRate(JSONObject e) {
-        cacheManager.getCache("exchangeRates").put("today_" + e.get("currency"), e.get("rate").toString());
+        getCache().put("today_" + e.get(CURRENCY), e.get(RATE).toString());
     }
 
     private void cacheExchangeRate(JSONObject e) {
-        String time = e.get("time").toString();
+        String time = e.get(TIME).toString();
         List<JSONObject> rateList = JSONUtils.jsonArrayToArray((JSONArray) e.get("Cube"));
         Map<String, String> rates  = rateList.stream().collect(Collectors.<JSONObject, String, String>toMap(
-                e1 -> e1.get("currency").toString(),
-                e1 -> e1.get("rate").toString()));
-        rates.forEach((k,v) -> cacheManager.getCache("exchangeRates").put(time + "_" + k, v));
+                e1 -> e1.get(CURRENCY).toString(),
+                e1 -> e1.get(RATE).toString()));
+        rates.forEach((k,v) -> getCache().put(time + "_" + k, v));
     }
 
     public void setCacheManager(CacheManager cacheManager) {

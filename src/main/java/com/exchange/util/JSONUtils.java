@@ -13,6 +13,12 @@ import java.util.function.Function;
 
 public class JSONUtils {
 
+    public static final String EUROFXREF_HIST_90D_XML = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml";
+    public static final String EUROFXREF_DAILY_XML = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+
+    public static final String ELEMENT = "Cube";
+    public static final String PRIMARY_ELEMENT = "gesmes:Envelope";
+
     public static List<JSONObject> getJsonObjects(String url, Function<JSONObject,JSONArray> getObject) throws IOException {
         String text = IOUtils.toString(new URL(url).openConnection().getInputStream());
         JSONObject jsonObject = XML.toJSONObject(text);
@@ -27,4 +33,15 @@ public class JSONUtils {
         }
         return jsonObjects;
     }
+
+    public static Function<JSONObject, JSONArray> allExchangeRatesJSONArray() {
+        return (JSONObject jsonObject) -> ((JSONArray)((JSONObject)((JSONObject)((JSONObject)jsonObject
+                .get(PRIMARY_ELEMENT)).get(ELEMENT)).get(ELEMENT)).get(ELEMENT));
+    }
+
+    public static Function<JSONObject, JSONArray> todayRateJSONArray() {
+        return (JSONObject jsonObject) -> ((JSONArray)((JSONObject) ((JSONObject) jsonObject
+                .get(PRIMARY_ELEMENT)).get(ELEMENT)).get(ELEMENT));
+    }
+
 }
