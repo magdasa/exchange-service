@@ -1,6 +1,5 @@
 package com.exchange;
 
-import com.exchange.service.ExchangeRateService;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.ehcache.EhCacheCacheManager;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;

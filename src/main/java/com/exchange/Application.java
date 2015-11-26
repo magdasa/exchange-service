@@ -17,6 +17,6 @@ public class Application {
         ExchangeRateService exchangeRateService = (ExchangeRateService) context.getBean("exchangeRateService");
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate((Runnable) exchangeRateService::updateCache, 0, 10, TimeUnit.MINUTES);
+        executor.scheduleAtFixedRate((Runnable) exchangeRateService::updateCache, 0, 60, TimeUnit.MINUTES);
     }
 }
